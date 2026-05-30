@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Kama — Seller App</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+  .phone { width: 390px; height: 844px; background: #fff; border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 40px 80px rgba(0,0,0,0.25); }
+  .screen { width: 100%; height: 100%; position: absolute; top: 0; left: 0; overflow: hidden; display: none; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  .status { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 14px 24px 0; flex-shrink: 0; }
+  .time { font-size: 15px; font-weight: 600; color: #111; }
+  .icons { display: flex; gap: 6px; align-items: center; font-size: 13px; }
+
+  .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  .btn { display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+  .btn:active { opacity: 0.7; }
+  .btn-primary { background: #1a1a1a; color: #fff; border-radius: 14px; font-size: 16px; font-weight: 600; height: 54px; width: 100%; }
+  .btn-secondary { background: #f5f5f5; color: #1a1a1a; border-radius: 14px; font-size: 15px; font-weight: 500; height: 48px; width: 100%; }
+  .btn-green { background: #f0f7ee; color: #3b6d11; border-radius: 14px; font-size: 15px; font-weight: 600; height: 48px; border: 1.5px solid #c0dd97; }
+  .back { width: 36px; height: 36px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-size: 16px; }
+
+  .tab-bar { height: 82px; border-top: 1px solid #f0f0f0; display: flex; align-items: center; padding: 0 8px 16px; flex-shrink: 0; background: #fff; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 8px 0; border: none; background: none; }
+  .tab-icon { font-size: 22px; }
+  .tab-label { font-size: 10px; color: #999; font-weight: 500; }
+  .tab.active .tab-label { color: #1a1a1a; }
+
+  /* ─── DASHBOARD ─── */
+  #dashboard { background: #faf9f7; }
+  .dash-header { padding: 0 20px 20px; }
+  .dash-greeting { font-size: 13px; color: #999; margin-bottom: 2px; }
+  .dash-name { font-size: 26px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
+
+  .stat-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 0 20px 20px; }
+  .stat-card { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+  .stat-label { font-size: 11px; font-weight: 500; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .stat-val { font-size: 26px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; }
+  .stat-sub { font-size: 12px; color: #888; margin-top: 2px; }
+  .stat-card.highlight { background: #1a1a1a; }
+  .stat-card.highlight .stat-label { color: rgba(255,255,255,0.6); }
+  .stat-card.highlight .stat-val { color: #fff; }
+  .stat-card.highlight .stat-sub { color: rgba(255,255,255,0.5); }
+
+  .payout-card { margin: 0 20px 20px; background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); display: flex; justify-content: space-between; align-items: center; }
+  .payout-info p { font-size: 13px; color: #888; margin-bottom: 4px; }
+  .payout-info h3 { font-size: 22px; font-weight: 700; color: #1a1a1a; }
+  .payout-btn { background: #f0f7ee; color: #3b6d11; border: 1.5px solid #c0dd97; border-radius: 10px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; border: none; background: #f0f7ee; color: #3b6d11; }
+
+  .section-head { display: flex; justify-content: space-between; align-items: center; padding: 0 20px 12px; }
+  .section-head h3 { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+  .section-head span { font-size: 13px; color: #c8a96e; font-weight: 500; cursor: pointer; }
+
+  .order-preview { background: #fff; margin: 0 20px 12px; border-radius: 16px; padding: 14px; display: flex; gap: 12px; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.06); cursor: pointer; }
+  .order-preview:active { opacity: 0.85; }
+  .order-emoji { font-size: 28px; }
+  .order-info { flex: 1; }
+  .order-info h4 { font-size: 14px; font-weight: 600; color: #1a1a1a; }
+  .order-info p { font-size: 12px; color: #888; margin-top: 2px; }
+  .order-status { font-size: 11px; font-weight: 600; padding: 4px 8px; border-radius: 8px; }
+  .status-new { background: #faeeda; color: #854f0b; }
+  .status-confirmed { background: #f0f7ee; color: #3b6d11; }
+  .status-done { background: #f5f5f5; color: #888; }
+
+  /* ─── ORDERS ─── */
+  #orders { background: #fff; }
+  .orders-header { padding: 0 20px 16px; }
+  .orders-header h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .order-tabs { display: flex; gap: 0; padding: 0 20px 16px; }
+  .order-tab { flex: 1; padding: 8px; text-align: center; font-size: 13px; font-weight: 500; color: #888; cursor: pointer; border-bottom: 2px solid #f0f0f0; }
+  .order-tab.active { color: #1a1a1a; border-bottom-color: #1a1a1a; }
+
+  .order-card { background: #faf9f7; margin: 0 20px 12px; border-radius: 16px; padding: 16px; cursor: pointer; }
+  .order-card:active { opacity: 0.85; }
+  .order-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .order-card-info h4 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .order-card-info p { font-size: 13px; color: #888; margin-top: 2px; }
+  .order-card-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .order-amount { font-size: 16px; font-weight: 700; color: #1a1a1a; }
+  .order-time { font-size: 12px; color: #888; }
+
+  /* ─── VERIFY ─── */
+  #verify { background: #fff; }
+  .verify-header { display: flex; align-items: center; gap: 12px; padding: 0 20px 20px; flex-shrink: 0; }
+  .verify-header h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .verify-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 32px; text-align: center; }
+  .order-summary { background: #faf9f7; border-radius: 16px; padding: 20px; width: 100%; margin-bottom: 28px; }
+  .order-summary h4 { font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+  .order-summary p { font-size: 14px; color: #888; }
+  .order-summary .amount { font-size: 24px; font-weight: 700; color: #1a1a1a; margin-top: 12px; }
+  .code-entry { margin-bottom: 28px; width: 100%; }
+  .code-label { font-size: 13px; color: #888; margin-bottom: 10px; }
+  .code-input { display: flex; gap: 10px; justify-content: center; }
+  .code-box { width: 62px; height: 72px; border-radius: 14px; border: 2px solid #e0e0e0; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 800; color: #1a1a1a; background: #faf9f7; }
+  .code-box.filled { border-color: #1a1a1a; background: #fff; }
+  .verify-footer { padding: 16px 20px 32px; display: flex; flex-direction: column; gap: 10px; flex-shrink: 0; }
+
+  /* ─── VERIFIED ─── */
+  #verified { background: #faf9f7; }
+  .verified-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 32px; text-align: center; }
+  .verified-icon { font-size: 64px; margin-bottom: 20px; }
+  .verified-title { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .verified-sub { font-size: 16px; color: #666; line-height: 1.5; margin-bottom: 32px; }
+  .payout-confirm { background: #fff; border-radius: 20px; padding: 24px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+  .payout-confirm-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .payout-confirm-amount { font-size: 40px; font-weight: 800; color: #3b6d11; letter-spacing: -1px; }
+  .payout-confirm-note { font-size: 13px; color: #888; margin-top: 6px; }
+  .verified-footer { padding: 16px 20px 32px; flex-shrink: 0; }
+
+  /* ─── LISTINGS ─── */
+  #listings { background: #fff; }
+  .listings-header { padding: 0 20px 16px; display: flex; justify-content: space-between; align-items: center; }
+  .listings-header h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .add-btn { width: 36px; height: 36px; border-radius: 18px; background: #1a1a1a; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 22px; cursor: pointer; border: none; }
+
+  .listing-item { display: flex; gap: 14px; padding: 14px 20px; align-items: center; border-bottom: 1px solid #f5f5f5; cursor: pointer; }
+  .listing-item:active { background: #faf9f7; }
+  .listing-emoji { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, #e8d5c0, #d4b896); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+  .listing-info { flex: 1; }
+  .listing-name { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .listing-price { font-size: 13px; color: #888; margin-top: 2px; }
+  .toggle { width: 44px; height: 26px; border-radius: 13px; position: relative; cursor: pointer; transition: background 0.2s; border: none; }
+  .toggle.on { background: #1a1a1a; }
+  .toggle.off { background: #e0e0e0; }
+  .toggle-dot { width: 20px; height: 20px; border-radius: 10px; background: #fff; position: absolute; top: 3px; transition: left 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+  .toggle.on .toggle-dot { left: 21px; }
+  .toggle.off .toggle-dot { left: 3px; }
+
+  /* ─── MESSAGES ─── */
+  #seller-messages { background: #fff; }
+  .msg-header { padding: 0 20px 16px; }
+  .msg-header h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .msg-thread { display: flex; align-items: center; padding: 14px 20px; gap: 14px; cursor: pointer; }
+  .msg-thread:active { background: #f9f9f9; }
+  .thread-avatar { width: 52px; height: 52px; border-radius: 26px; background: linear-gradient(135deg, #8fbc8f, #5a8a5a); display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; font-weight: 700; flex-shrink: 0; }
+  .thread-info { flex: 1; }
+  .thread-name { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .thread-preview { font-size: 13px; color: #888; margin-top: 2px; }
+  .thread-time { font-size: 12px; color: #bbb; }
+  .unread-dot { width: 10px; height: 10px; border-radius: 5px; background: #c8a96e; }
+
+  /* ─── SELLER CHAT ─── */
+  #seller-chat { background: #fff; }
+  .chat-header { display: flex; align-items: center; gap: 12px; padding: 0 20px 16px; border-bottom: 1px solid #f5f5f5; flex-shrink: 0; }
+  .chat-avatar { width: 38px; height: 38px; border-radius: 19px; background: linear-gradient(135deg, #8fbc8f, #5a8a5a); display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; font-weight: 700; }
+  .chat-name { font-size: 15px; font-weight: 600; }
+  .chat-status { font-size: 12px; color: #888; }
+  .chat-messages { flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+  .bubble { max-width: 75%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
+  .bubble.them { background: #f5f5f5; color: #1a1a1a; border-bottom-left-radius: 4px; align-self: flex-start; }
+  .bubble.me { background: #1a1a1a; color: #fff; border-bottom-right-radius: 4px; align-self: flex-end; }
+  .bubble-time { font-size: 11px; color: #bbb; margin-top: 4px; }
+  .bubble-time.right { text-align: right; }
+  .chat-input { display: flex; gap: 10px; padding: 12px 20px 32px; border-top: 1px solid #f5f5f5; flex-shrink: 0; }
+  .chat-field { flex: 1; background: #f5f5f5; border-radius: 22px; border: none; padding: 12px 16px; font-size: 15px; font-family: inherit; outline: none; }
+  .send-btn { width: 44px; height: 44px; border-radius: 22px; background: #1a1a1a; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+
+  /* ─── STOREFRONT ─── */
+  #storefront { background: #fff; }
+  .store-hero { height: 160px; background: linear-gradient(135deg, #8fbc8f, #5a8a5a); position: relative; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 60px; }
+  .store-avatar { position: absolute; bottom: -28px; left: 20px; width: 64px; height: 64px; border-radius: 32px; background: #fff; display: flex; align-items: center; justify-content: center; font-size: 28px; border: 3px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  .store-body { padding: 40px 20px 20px; }
+  .store-name { font-size: 22px; font-weight: 700; color: #1a1a1a; margin-bottom: 2px; }
+  .store-loc { font-size: 14px; color: #888; margin-bottom: 8px; }
+  .kama-badge { background: #fdf8ee; border: 1px solid #e8d9b0; border-radius: 8px; padding: 4px 10px; font-size: 12px; color: #8a6d2e; font-weight: 500; display: inline-block; margin-bottom: 14px; }
+  .store-bio { font-size: 14px; color: #555; line-height: 1.6; margin-bottom: 20px; }
+  .store-stats { display: flex; gap: 24px; margin-bottom: 20px; }
+  .store-stat { text-align: center; }
+  .store-stat-val { font-size: 20px; font-weight: 700; color: #1a1a1a; }
+  .store-stat-label { font-size: 11px; color: #888; }
+  .store-divider { height: 1px; background: #f5f5f5; margin: 16px 0; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- DASHBOARD -->
+  <div class="screen active" id="dashboard">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="scroll">
+      <div class="dash-header">
+        <p class="dash-greeting">Good morning, Amy 🌿</p>
+        <h2 class="dash-name">Your store</h2>
+      </div>
+
+      <div class="stat-cards">
+        <div class="stat-card highlight">
+          <div class="stat-label">This week</div>
+          <div class="stat-val">$148</div>
+          <div class="stat-sub">3 orders · +12%</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending payout</div>
+          <div class="stat-val">$44</div>
+          <div class="stat-sub">2 confirmed</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Active listings</div>
+          <div class="stat-val">6</div>
+          <div class="stat-sub">All available</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Profile views</div>
+          <div class="stat-val">34</div>
+          <div class="stat-sub">This week</div>
+        </div>
+      </div>
+
+      <div class="payout-card">
+        <div class="payout-info">
+          <p>Next payout</p>
+          <h3>$44.00</h3>
+        </div>
+        <button class="payout-btn">View details</button>
+      </div>
+
+      <div class="section-head"><h3>New orders</h3><span onclick="show('orders')">See all</span></div>
+      <div class="order-preview" onclick="show('orders')">
+        <div class="order-emoji">🧴</div>
+        <div class="order-info">
+          <h4>Healing Kukui Body Balm × 1</h4>
+          <p>Kealoha M. · Pickup Wed Jun 4</p>
+        </div>
+        <span class="order-status status-new">New</span>
+      </div>
+      <div class="order-preview" onclick="show('orders')">
+        <div class="order-emoji">🌸</div>
+        <div class="order-info">
+          <h4>Tropical Plant Bundle × 2</h4>
+          <p>Sarah T. · Pickup Thu Jun 5</p>
+        </div>
+        <span class="order-status status-confirmed">Confirmed</span>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab active"><div class="tab-icon">📊</div><div class="tab-label">Dashboard</div></button>
+      <button class="tab" onclick="show('orders')"><div class="tab-icon">📦</div><div class="tab-label">Orders</div></button>
+      <button class="tab" onclick="show('listings')"><div class="tab-icon">🏪</div><div class="tab-label">Listings</div></button>
+      <button class="tab" onclick="show('seller-messages')"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></button>
+      <button class="tab" onclick="show('storefront')"><div class="tab-icon">👤</div><div class="tab-label">Store</div></button>
+    </div>
+  </div>
+
+  <!-- ORDERS -->
+  <div class="screen" id="orders">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="orders-header"><h2>Orders</h2></div>
+    <div class="order-tabs">
+      <div class="order-tab active">New (1)</div>
+      <div class="order-tab">Confirmed (2)</div>
+      <div class="order-tab">Done</div>
+    </div>
+    <div class="scroll">
+      <div class="order-card" onclick="show('verify')">
+        <div class="order-card-top">
+          <div class="order-card-info">
+            <h4>Healing Kukui Body Balm × 1</h4>
+            <p>Kealoha M. · ordered 10 min ago</p>
+          </div>
+          <span class="order-status status-new">New</span>
+        </div>
+        <div class="order-card-bottom">
+          <div class="order-amount">$22.00</div>
+          <div class="order-time">Pickup: Wed Jun 4</div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab" onclick="show('dashboard')"><div class="tab-icon">📊</div><div class="tab-label">Dashboard</div></button>
+      <button class="tab active"><div class="tab-icon">📦</div><div class="tab-label">Orders</div></button>
+      <button class="tab" onclick="show('listings')"><div class="tab-icon">🏪</div><div class="tab-label">Listings</div></button>
+      <button class="tab" onclick="show('seller-messages')"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></button>
+      <button class="tab" onclick="show('storefront')"><div class="tab-icon">👤</div><div class="tab-label">Store</div></button>
+    </div>
+  </div>
+
+  <!-- VERIFY PICKUP CODE -->
+  <div class="screen" id="verify">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="verify-header">
+      <button class="back" onclick="show('orders')">←</button>
+      <h2>Verify pickup</h2>
+    </div>
+    <div class="verify-body">
+      <div class="order-summary">
+        <h4>Healing Kukui Body Balm × 1</h4>
+        <p>Kealoha M. · Wed Jun 4</p>
+        <div class="amount">$22.00 in escrow</div>
+      </div>
+      <div class="code-entry">
+        <p class="code-label">Ask the buyer for their 4-digit code</p>
+        <div class="code-input">
+          <div class="code-box filled">K</div>
+          <div class="code-box filled">4</div>
+          <div class="code-box filled">M</div>
+          <div class="code-box filled">2</div>
+        </div>
+      </div>
+    </div>
+    <div class="verify-footer">
+      <button class="btn btn-primary" onclick="show('verified')">✓ Confirm pickup — release $22</button>
+      <button class="btn btn-secondary" onclick="show('orders')">Cancel</button>
+    </div>
+  </div>
+
+  <!-- VERIFIED -->
+  <div class="screen" id="verified">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="scroll">
+      <div class="verified-body">
+        <div class="verified-icon">🎉</div>
+        <h2 class="verified-title">Payment released!</h2>
+        <p class="verified-sub">Pickup confirmed. Your money is on the way — usually arrives within 1–2 business days.</p>
+        <div class="payout-confirm">
+          <div class="payout-confirm-label">Amount released</div>
+          <div class="payout-confirm-amount">$22.00</div>
+          <div class="payout-confirm-note">To your connected bank account</div>
+        </div>
+      </div>
+    </div>
+    <div class="verified-footer">
+      <button class="btn btn-primary" onclick="show('dashboard')">Back to dashboard</button>
+    </div>
+  </div>
+
+  <!-- LISTINGS -->
+  <div class="screen" id="listings">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="listings-header">
+      <h2>My listings</h2>
+      <button class="add-btn">+</button>
+    </div>
+    <div class="scroll">
+      <div class="listing-item">
+        <div class="listing-emoji">🧴</div>
+        <div class="listing-info">
+          <div class="listing-name">Healing Kukui Body Balm</div>
+          <div class="listing-price">$22 · 12 in stock</div>
+        </div>
+        <button class="toggle on" onclick="this.classList.toggle('on'); this.classList.toggle('off')"><div class="toggle-dot"></div></button>
+      </div>
+      <div class="listing-item">
+        <div class="listing-emoji">🌸</div>
+        <div class="listing-info">
+          <div class="listing-name">Tropical Plant Bundle</div>
+          <div class="listing-price">$24 · 8 in stock</div>
+        </div>
+        <button class="toggle on" onclick="this.classList.toggle('on'); this.classList.toggle('off')"><div class="toggle-dot"></div></button>
+      </div>
+      <div class="listing-item">
+        <div class="listing-emoji">🌿</div>
+        <div class="listing-info">
+          <div class="listing-name">Fresh Noni Leaves</div>
+          <div class="listing-price">$8 · 20 in stock</div>
+        </div>
+        <button class="toggle on" onclick="this.classList.toggle('on'); this.classList.toggle('off')"><div class="toggle-dot"></div></button>
+      </div>
+      <div class="listing-item">
+        <div class="listing-emoji">🪴</div>
+        <div class="listing-info">
+          <div class="listing-name">Monstera Cutting</div>
+          <div class="listing-price">$15 · 5 in stock</div>
+        </div>
+        <button class="toggle off" onclick="this.classList.toggle('on'); this.classList.toggle('off')"><div class="toggle-dot"></div></button>
+      </div>
+      <div class="listing-item">
+        <div class="listing-emoji">🍃</div>
+        <div class="listing-info">
+          <div class="listing-name">Mamaki Tea Leaves</div>
+          <div class="listing-price">$12 · 15 in stock</div>
+        </div>
+        <button class="toggle on" onclick="this.classList.toggle('on'); this.classList.toggle('off')"><div class="toggle-dot"></div></button>
+      </div>
+      <div class="listing-item">
+        <div class="listing-emoji">💚</div>
+        <div class="listing-info">
+          <div class="listing-name">Healing Ointment Set</div>
+          <div class="listing-price">$36 · 4 in stock</div>
+        </div>
+        <button class="toggle on" onclick="this.classList.toggle('on'); this.classList.toggle('off')"><div class="toggle-dot"></div></button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab" onclick="show('dashboard')"><div class="tab-icon">📊</div><div class="tab-label">Dashboard</div></button>
+      <button class="tab" onclick="show('orders')"><div class="tab-icon">📦</div><div class="tab-label">Orders</div></button>
+      <button class="tab active"><div class="tab-icon">🏪</div><div class="tab-label">Listings</div></button>
+      <button class="tab" onclick="show('seller-messages')"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></button>
+      <button class="tab" onclick="show('storefront')"><div class="tab-icon">👤</div><div class="tab-label">Store</div></button>
+    </div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="screen" id="seller-messages">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="scroll">
+      <div class="msg-header"><h2>Messages</h2></div>
+      <div class="msg-thread" onclick="show('seller-chat')">
+        <div class="thread-avatar">K</div>
+        <div class="thread-info">
+          <div class="thread-name">Kealoha M.</div>
+          <div class="thread-preview">Can I pick up Wednesday around 11am?</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+          <div class="thread-time">2m</div>
+          <div class="unread-dot"></div>
+        </div>
+      </div>
+      <div class="msg-thread">
+        <div class="thread-avatar" style="background: linear-gradient(135deg, #b8a0d4, #9070c0);">S</div>
+        <div class="thread-info">
+          <div class="thread-name">Sarah T.</div>
+          <div class="thread-preview">Thanks! See you Thursday 🌸</div>
+        </div>
+        <div class="thread-time">1h</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab" onclick="show('dashboard')"><div class="tab-icon">📊</div><div class="tab-label">Dashboard</div></button>
+      <button class="tab" onclick="show('orders')"><div class="tab-icon">📦</div><div class="tab-label">Orders</div></button>
+      <button class="tab" onclick="show('listings')"><div class="tab-icon">🏪</div><div class="tab-label">Listings</div></button>
+      <button class="tab active"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></button>
+      <button class="tab" onclick="show('storefront')"><div class="tab-icon">👤</div><div class="tab-label">Store</div></button>
+    </div>
+  </div>
+
+  <!-- SELLER CHAT -->
+  <div class="screen" id="seller-chat">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="chat-header">
+      <button class="back" onclick="show('seller-messages')">←</button>
+      <div class="chat-avatar">K</div>
+      <div>
+        <div class="chat-name">Kealoha M.</div>
+        <div class="chat-status">Order: Kukui Balm · Pickup Wed</div>
+      </div>
+    </div>
+    <div class="chat-messages">
+      <div>
+        <div class="bubble them">Hi Amy! Can I pick up Wednesday around 11am?</div>
+        <div class="bubble-time">10:26am</div>
+      </div>
+      <div style="align-self:flex-end">
+        <div class="bubble me">Wednesday at 11 works perfectly! I'll have your order packed and ready at the gate 🤙</div>
+        <div class="bubble-time right">10:27am</div>
+      </div>
+      <div>
+        <div class="bubble them">Your story is the reason I downloaded Kama 🌺</div>
+        <div class="bubble-time">10:28am</div>
+      </div>
+      <div style="align-self:flex-end">
+        <div class="bubble me">That means everything. See you Wednesday! 🌿</div>
+        <div class="bubble-time right">10:29am</div>
+      </div>
+    </div>
+    <div class="chat-input">
+      <input class="chat-field" placeholder="Message Kealoha..." />
+      <button class="send-btn">↑</button>
+    </div>
+  </div>
+
+  <!-- STOREFRONT -->
+  <div class="screen" id="storefront">
+    <div class="status" style="position:absolute; top:0; left:0; right:0; z-index:10; background:transparent;"><span class="time" style="color:#fff;">9:41</span><div class="icons" style="color:#fff;"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="scroll">
+      <div class="store-hero">
+        🌿
+        <div class="store-avatar">🌸</div>
+      </div>
+      <div class="store-body">
+        <h2 class="store-name">Amy's Kahuku Farm</h2>
+        <p class="store-loc">📍 Kahuku, North Shore, Oahu</p>
+        <span class="kama-badge">🤙 Kama-aina · Farming since 2011</span>
+        <p class="store-bio">Third-generation farmer on the North Shore. I grow plants and make balms, ointments, and herbal remedies from what comes off our land. Everything is small batch, made by hand, and priced to keep us on island.</p>
+        <div class="store-stats">
+          <div class="store-stat"><div class="store-stat-val">47</div><div class="store-stat-label">Orders</div></div>
+          <div class="store-stat"><div class="store-stat-val">4.9★</div><div class="store-stat-label">Rating</div></div>
+          <div class="store-stat"><div class="store-stat-val">6</div><div class="store-stat-label">Listings</div></div>
+        </div>
+        <div class="store-divider"></div>
+        <button class="btn btn-secondary" style="margin-bottom: 10px;">Edit profile</button>
+        <button class="btn" style="background:#f5f5f5; color:#888; border-radius:14px; height:48px; font-size:14px;">Share my store link</button>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab" onclick="show('dashboard')"><div class="tab-icon">📊</div><div class="tab-label">Dashboard</div></button>
+      <button class="tab" onclick="show('orders')"><div class="tab-icon">📦</div><div class="tab-label">Orders</div></button>
+      <button class="tab" onclick="show('listings')"><div class="tab-icon">🏪</div><div class="tab-label">Listings</div></button>
+      <button class="tab" onclick="show('seller-messages')"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></button>
+      <button class="tab active"><div class="tab-icon">👤</div><div class="tab-label">Store</div></button>
+    </div>
+  </div>
+
+</div>
+<script>
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById(id).querySelector('.scroll')?.scrollTo(0, 0);
+  }
+
+  document.querySelectorAll('.order-tab').forEach(tab => {
+    tab.addEventListener('click', function() {
+      document.querySelectorAll('.order-tab').forEach(t => t.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Kama — Buyer App</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+
+  .phone { width: 390px; height: 844px; background: #fff; border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 40px 80px rgba(0,0,0,0.25); }
+  .screen { width: 100%; height: 100%; position: absolute; top: 0; left: 0; overflow: hidden; display: none; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* Status bar */
+  .status { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 14px 24px 0; flex-shrink: 0; }
+  .time { font-size: 15px; font-weight: 600; color: #111; }
+  .icons { display: flex; gap: 6px; align-items: center; }
+  .icons span { font-size: 13px; }
+
+  /* Shared */
+  .scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .scroll::-webkit-scrollbar { display: none; }
+  .btn { display: flex; align-items: center; justify-content: center; border: none; cursor: pointer; font-family: inherit; transition: opacity 0.15s; }
+  .btn:active { opacity: 0.7; }
+  .btn-primary { background: #1a1a1a; color: #fff; border-radius: 14px; font-size: 16px; font-weight: 600; height: 54px; width: 100%; }
+  .btn-secondary { background: #f5f5f5; color: #1a1a1a; border-radius: 14px; font-size: 15px; font-weight: 500; height: 48px; width: 100%; }
+  .back { width: 36px; height: 36px; border-radius: 50%; background: #f5f5f5; display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; font-size: 16px; }
+  .back:active { background: #e8e8e8; }
+
+  /* Bottom nav */
+  .tab-bar { height: 82px; border-top: 1px solid #f0f0f0; display: flex; align-items: center; padding: 0 8px 16px; flex-shrink: 0; background: #fff; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; padding: 8px 0; border: none; background: none; }
+  .tab-icon { font-size: 22px; }
+  .tab-label { font-size: 10px; color: #999; font-weight: 500; }
+  .tab.active .tab-label { color: #1a1a1a; }
+  .tab.active .tab-icon { transform: scale(1.1); }
+
+  /* ─── ONBOARDING ─── */
+  #ob1, #ob2, #ob3 { background: #faf9f7; }
+  .ob-hero { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 32px 24px; }
+  .ob-icon { font-size: 72px; margin-bottom: 24px; }
+  .ob-title { font-size: 28px; font-weight: 700; color: #1a1a1a; text-align: center; line-height: 1.2; margin-bottom: 12px; letter-spacing: -0.5px; }
+  .ob-sub { font-size: 16px; color: #666; text-align: center; line-height: 1.5; }
+  .ob-footer { padding: 24px 32px 40px; }
+  .ob-dots { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+  .dot { width: 8px; height: 8px; border-radius: 4px; background: #e0e0e0; transition: all 0.3s; }
+  .dot.active { width: 24px; background: #c8a96e; }
+  .ob-skip { text-align: center; margin-top: 14px; color: #999; font-size: 14px; cursor: pointer; }
+
+  /* ─── DISCOVER ─── */
+  #discover { background: #faf9f7; }
+  .discover-header { padding: 0 20px 0; }
+  .discover-greeting { font-size: 13px; color: #999; margin-bottom: 2px; }
+  .discover-title { font-size: 26px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; margin-bottom: 16px; }
+  .search-bar { background: #fff; border-radius: 14px; height: 46px; display: flex; align-items: center; padding: 0 16px; gap: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 20px; }
+  .search-bar span { font-size: 16px; }
+  .search-bar p { font-size: 14px; color: #bbb; }
+  .cats { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; }
+  .cats::-webkit-scrollbar { display: none; }
+  .cat { flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; }
+  .cat.active { background: #1a1a1a; color: #fff; }
+  .cat:not(.active) { background: #fff; color: #555; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+  .section-head { display: flex; justify-content: space-between; align-items: center; padding: 20px 20px 12px; }
+  .section-head h3 { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+  .section-head span { font-size: 13px; color: #c8a96e; font-weight: 500; }
+
+  .featured-card { margin: 0 20px 4px; border-radius: 20px; overflow: hidden; cursor: pointer; background: #e8e0d5; position: relative; height: 200px; }
+  .featured-card:active { opacity: 0.9; }
+  .featured-img { width: 100%; height: 100%; object-fit: cover; background: linear-gradient(135deg, #d4c5b0, #c8a96e); display: flex; align-items: flex-end; }
+  .featured-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.65) 0%, transparent 50%); display: flex; align-items: flex-end; padding: 16px; }
+  .featured-info { color: #fff; }
+  .featured-badge { background: #c8a96e; color: #fff; font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 6px; display: inline-block; margin-bottom: 6px; letter-spacing: 0.05em; }
+  .featured-name { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+  .featured-loc { font-size: 13px; opacity: 0.85; }
+
+  .cards-row { display: flex; gap: 12px; padding: 0 20px; overflow-x: auto; }
+  .cards-row::-webkit-scrollbar { display: none; }
+  .mini-card { flex-shrink: 0; width: 160px; background: #fff; border-radius: 16px; overflow: hidden; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .mini-card:active { opacity: 0.85; }
+  .mini-img { height: 110px; background: linear-gradient(135deg, #e8d5c0, #d4b896); display: flex; align-items: center; justify-content: center; font-size: 36px; }
+  .mini-info { padding: 10px 12px 12px; }
+  .mini-name { font-size: 13px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px; }
+  .mini-seller { font-size: 11px; color: #888; margin-bottom: 6px; }
+  .mini-price { font-size: 14px; font-weight: 700; color: #1a1a1a; }
+
+  /* ─── LISTING DETAIL ─── */
+  #detail { background: #fff; }
+  .detail-img { height: 260px; background: linear-gradient(135deg, #d4c5b0, #c8a96e); position: relative; display: flex; align-items: center; justify-content: center; font-size: 80px; flex-shrink: 0; }
+  .detail-back { position: absolute; top: 60px; left: 20px; }
+  .detail-fav { position: absolute; top: 60px; right: 20px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; border: none; }
+  .detail-body { padding: 24px 20px; flex: 1; overflow-y: auto; }
+  .detail-badge { background: #f0f7ee; color: #3b6d11; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 8px; display: inline-block; margin-bottom: 10px; }
+  .detail-name { font-size: 24px; font-weight: 700; color: #1a1a1a; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .detail-seller { font-size: 14px; color: #888; margin-bottom: 16px; }
+  .detail-price { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 4px; }
+  .detail-unit { font-size: 13px; color: #888; margin-bottom: 20px; }
+  .detail-divider { height: 1px; background: #f5f5f5; margin: 20px 0; }
+  .seller-row { display: flex; align-items: center; gap: 12px; }
+  .seller-avatar { width: 48px; height: 48px; border-radius: 24px; background: linear-gradient(135deg, #c8a96e, #a0845a); display: flex; align-items: center; justify-content: center; font-size: 20px; color: #fff; font-weight: 700; }
+  .seller-info h4 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .seller-info p { font-size: 13px; color: #888; }
+  .kama-badge { background: #fdf8ee; border: 1px solid #e8d9b0; border-radius: 8px; padding: 3px 8px; font-size: 11px; color: #8a6d2e; font-weight: 500; display: inline-block; margin-top: 4px; }
+  .how-box { background: #faf9f7; border-radius: 14px; padding: 16px; margin-top: 20px; }
+  .how-box h4 { font-size: 14px; font-weight: 600; color: #1a1a1a; margin-bottom: 10px; }
+  .how-step { display: flex; gap: 10px; margin-bottom: 8px; font-size: 13px; color: #555; align-items: flex-start; }
+  .how-num { width: 20px; height: 20px; border-radius: 10px; background: #c8a96e; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .detail-footer { padding: 16px 20px 32px; border-top: 1px solid #f5f5f5; display: flex; gap: 12px; align-items: center; flex-shrink: 0; }
+  .qty-ctrl { display: flex; align-items: center; gap: 12px; background: #f5f5f5; border-radius: 12px; padding: 8px 16px; }
+  .qty-btn { width: 28px; height: 28px; border-radius: 14px; background: #fff; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+  .qty-num { font-size: 16px; font-weight: 600; min-width: 20px; text-align: center; }
+
+  /* ─── BOOKING ─── */
+  #booking { background: #fff; }
+  .booking-header { display: flex; align-items: center; gap: 12px; padding: 0 20px 20px; }
+  .booking-header h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; }
+  .booking-section { padding: 0 20px 20px; }
+  .booking-label { font-size: 13px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .order-item { background: #faf9f7; border-radius: 14px; padding: 14px; margin-bottom: 12px; display: flex; gap: 12px; align-items: center; }
+  .order-icon { font-size: 32px; }
+  .order-info h4 { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .order-info p { font-size: 13px; color: #888; }
+  .date-picker { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .date-opt { background: #f5f5f5; border-radius: 12px; padding: 12px 8px; text-align: center; cursor: pointer; border: 2px solid transparent; }
+  .date-opt.selected { border-color: #1a1a1a; background: #fff; }
+  .date-day { font-size: 11px; color: #888; font-weight: 500; }
+  .date-num { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+  .date-time { font-size: 11px; color: #888; margin-top: 2px; }
+  .price-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f5f5f5; font-size: 14px; color: #555; }
+  .price-row.total { border-bottom: none; font-weight: 700; font-size: 16px; color: #1a1a1a; padding-top: 14px; }
+  .escrow-note { background: #f0f7ee; border-radius: 12px; padding: 12px 14px; font-size: 13px; color: #3b6d11; line-height: 1.4; margin-top: 12px; display: flex; gap: 8px; }
+  .booking-footer { padding: 16px 20px 32px; border-top: 1px solid #f5f5f5; flex-shrink: 0; }
+
+  /* ─── CONFIRMED ─── */
+  #confirmed { background: #faf9f7; }
+  .confirmed-body { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 32px; text-align: center; }
+  .check-circle { width: 80px; height: 80px; border-radius: 40px; background: #f0f7ee; display: flex; align-items: center; justify-content: center; font-size: 36px; margin-bottom: 20px; }
+  .confirmed-title { font-size: 26px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; letter-spacing: -0.5px; }
+  .confirmed-sub { font-size: 15px; color: #666; line-height: 1.5; margin-bottom: 32px; }
+  .pickup-card { background: #fff; border-radius: 20px; padding: 24px; width: 100%; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin-bottom: 24px; }
+  .pickup-label { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 8px; }
+  .pickup-code { font-size: 42px; font-weight: 800; color: #1a1a1a; letter-spacing: 6px; margin-bottom: 8px; }
+  .pickup-desc { font-size: 13px; color: #888; }
+  .pickup-detail { background: #fff; border-radius: 16px; padding: 16px; width: 100%; display: flex; flex-direction: column; gap: 12px; }
+  .pickup-row { display: flex; gap: 10px; align-items: center; font-size: 14px; color: #555; }
+  .pickup-row span:first-child { font-size: 18px; }
+  .confirmed-footer { padding: 16px 20px 32px; display: flex; gap: 10px; flex-shrink: 0; }
+
+  /* ─── MESSAGES ─── */
+  #messages { background: #fff; }
+  .msg-header { padding: 0 20px 16px; }
+  .msg-header h2 { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; }
+  .msg-thread { display: flex; align-items: center; padding: 14px 20px; gap: 14px; cursor: pointer; }
+  .msg-thread:active { background: #f9f9f9; }
+  .thread-avatar { width: 52px; height: 52px; border-radius: 26px; background: linear-gradient(135deg, #c8a96e, #a0845a); display: flex; align-items: center; justify-content: center; font-size: 22px; color: #fff; font-weight: 700; flex-shrink: 0; }
+  .thread-info { flex: 1; }
+  .thread-name { font-size: 15px; font-weight: 600; color: #1a1a1a; }
+  .thread-preview { font-size: 13px; color: #888; margin-top: 2px; }
+  .thread-time { font-size: 12px; color: #bbb; }
+  .unread-dot { width: 10px; height: 10px; border-radius: 5px; background: #c8a96e; }
+
+  /* ─── CHAT ─── */
+  #chat { background: #fff; }
+  .chat-header { display: flex; align-items: center; gap: 12px; padding: 0 20px 16px; border-bottom: 1px solid #f5f5f5; flex-shrink: 0; }
+  .chat-avatar { width: 38px; height: 38px; border-radius: 19px; background: linear-gradient(135deg, #c8a96e, #a0845a); display: flex; align-items: center; justify-content: center; font-size: 16px; color: #fff; font-weight: 700; }
+  .chat-name { font-size: 15px; font-weight: 600; }
+  .chat-status { font-size: 12px; color: #888; }
+  .chat-messages { flex: 1; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; }
+  .bubble { max-width: 75%; padding: 12px 14px; border-radius: 18px; font-size: 14px; line-height: 1.4; }
+  .bubble.them { background: #f5f5f5; color: #1a1a1a; border-bottom-left-radius: 4px; align-self: flex-start; }
+  .bubble.me { background: #1a1a1a; color: #fff; border-bottom-right-radius: 4px; align-self: flex-end; }
+  .bubble-time { font-size: 11px; color: #bbb; margin-top: 4px; }
+  .bubble-time.right { text-align: right; }
+  .chat-input { display: flex; gap: 10px; padding: 12px 20px 32px; border-top: 1px solid #f5f5f5; flex-shrink: 0; }
+  .chat-field { flex: 1; background: #f5f5f5; border-radius: 22px; border: none; padding: 12px 16px; font-size: 15px; font-family: inherit; outline: none; }
+  .send-btn { width: 44px; height: 44px; border-radius: 22px; background: #1a1a1a; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 18px; }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- ONBOARDING 1 -->
+  <div class="screen active" id="ob1">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="ob-hero">
+      <div class="ob-icon">🌺</div>
+      <h1 class="ob-title">Buy local. Know exactly who you're buying from.</h1>
+      <p class="ob-sub">Kama connects you directly with Hawaii's farmers, makers, and artisans.</p>
+    </div>
+    <div class="ob-footer">
+      <div class="ob-dots"><div class="dot active"></div><div class="dot"></div><div class="dot"></div></div>
+      <button class="btn btn-primary" onclick="show('ob2')">Get started</button>
+      <p class="ob-skip" onclick="show('discover')">Skip</p>
+    </div>
+  </div>
+
+  <!-- ONBOARDING 2 -->
+  <div class="screen" id="ob2">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="ob-hero">
+      <div class="ob-icon">🛡️</div>
+      <h1 class="ob-title">Pay safely. Pick up with confidence.</h1>
+      <p class="ob-sub">Your payment is held in escrow until you pick up your order. A simple code closes the transaction.</p>
+    </div>
+    <div class="ob-footer">
+      <div class="ob-dots"><div class="dot"></div><div class="dot active"></div><div class="dot"></div></div>
+      <button class="btn btn-primary" onclick="show('ob3')">Next</button>
+      <p class="ob-skip" onclick="show('discover')">Skip</p>
+    </div>
+  </div>
+
+  <!-- ONBOARDING 3 -->
+  <div class="screen" id="ob3">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="ob-hero">
+      <div class="ob-icon">🤙</div>
+      <h1 class="ob-title">Every purchase keeps a family on island.</h1>
+      <p class="ob-sub">Not a marketplace. A community. Local-first, always.</p>
+    </div>
+    <div class="ob-footer">
+      <div class="ob-dots"><div class="dot"></div><div class="dot"></div><div class="dot active"></div></div>
+      <button class="btn btn-primary" onclick="show('discover')">Start exploring</button>
+    </div>
+  </div>
+
+  <!-- DISCOVER -->
+  <div class="screen" id="discover">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="scroll">
+      <div class="discover-header">
+        <p class="discover-greeting">Good morning 🌺</p>
+        <h2 class="discover-title">Find something local</h2>
+        <div class="search-bar"><span>🔍</span><p>Search farms, makers, artisans...</p></div>
+        <div class="cats">
+          <button class="cat active">All</button>
+          <button class="cat">🌿 Farms</button>
+          <button class="cat">🧴 Wellness</button>
+          <button class="cat">🧵 Makers</button>
+          <button class="cat">🍯 Food</button>
+          <button class="cat">🌸 Plants</button>
+        </div>
+      </div>
+
+      <div class="section-head"><h3>Featured</h3><span>See all</span></div>
+      <div class="featured-card" onclick="show('detail')">
+        <div class="featured-img" style="background: linear-gradient(135deg, #8fbc8f, #5a8a5a); font-size: 80px; display:flex; align-items:center; justify-content:center;">🌿</div>
+        <div class="featured-overlay">
+          <div class="featured-info">
+            <div class="featured-badge">KAMA-AINA</div>
+            <div class="featured-name">Amy's Kahuku Farm</div>
+            <div class="featured-loc">📍 Kahuku, North Shore · Plants & Wellness</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head"><h3>Near you</h3><span>See all</span></div>
+      <div class="cards-row">
+        <div class="mini-card" onclick="show('detail')">
+          <div class="mini-img">🍯</div>
+          <div class="mini-info">
+            <div class="mini-name">Raw Waimanalo Honey</div>
+            <div class="mini-seller">Pono Bees · Waimanalo</div>
+            <div class="mini-price">$18 / jar</div>
+          </div>
+        </div>
+        <div class="mini-card" onclick="show('detail')">
+          <div class="mini-img">🧵</div>
+          <div class="mini-info">
+            <div class="mini-name">Upcycled Aloha Tee</div>
+            <div class="mini-seller">Leilani Makes · Laie</div>
+            <div class="mini-price">$38 / piece</div>
+          </div>
+        </div>
+        <div class="mini-card" onclick="show('detail')">
+          <div class="mini-img">🌸</div>
+          <div class="mini-info">
+            <div class="mini-name">Tropical Plant Bundle</div>
+            <div class="mini-seller">Amy's Farm · Kahuku</div>
+            <div class="mini-price">$24 / bundle</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-head"><h3>Makers</h3><span>See all</span></div>
+      <div class="cards-row" style="padding-bottom: 20px;">
+        <div class="mini-card" onclick="show('detail')">
+          <div class="mini-img">🧴</div>
+          <div class="mini-info">
+            <div class="mini-name">Healing Kukui Balm</div>
+            <div class="mini-seller">Amy's Farm · Kahuku</div>
+            <div class="mini-price">$22 / tin</div>
+          </div>
+        </div>
+        <div class="mini-card" onclick="show('detail')">
+          <div class="mini-img">🎨</div>
+          <div class="mini-info">
+            <div class="mini-name">Hand-Stamped Cards</div>
+            <div class="mini-seller">Makoa Press · Haleiwa</div>
+            <div class="mini-price">$12 / pack</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab active"><div class="tab-icon">🏠</div><div class="tab-label">Discover</div></button>
+      <button class="tab" onclick="show('messages')"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></button>
+      <button class="tab"><div class="tab-icon">🛒</div><div class="tab-label">Orders</div></button>
+      <button class="tab"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></button>
+    </div>
+  </div>
+
+  <!-- LISTING DETAIL -->
+  <div class="screen" id="detail">
+    <div class="detail-img">
+      🌿
+      <button class="back detail-back" onclick="show('discover')">←</button>
+      <button class="detail-fav">🤍</button>
+    </div>
+    <div class="scroll detail-body">
+      <span class="detail-badge">✓ Kama-aina seller</span>
+      <h2 class="detail-name">Healing Kukui Body Balm</h2>
+      <p class="detail-seller">Amy's Kahuku Farm · Kahuku, North Shore</p>
+      <div class="detail-price">$22</div>
+      <p class="detail-unit">per 2oz tin · handmade in small batches</p>
+      <p style="font-size:14px; color:#555; line-height:1.6;">Made from kukui nuts grown right on the farm. Anti-inflammatory, deeply moisturizing. No synthetic ingredients. Amy has been making this for her family for years — now she's sharing it.</p>
+
+      <div class="detail-divider"></div>
+      <div class="seller-row">
+        <div class="seller-avatar">A</div>
+        <div class="seller-info">
+          <h4>Amy Kahananui</h4>
+          <p>Kahuku · farming since 2011</p>
+          <span class="kama-badge">🤙 Kama-aina</span>
+        </div>
+      </div>
+
+      <div class="how-box">
+        <h4>How Kama works</h4>
+        <div class="how-step"><div class="how-num">1</div><span>Pay securely through the app — funds held in escrow</span></div>
+        <div class="how-step"><div class="how-num">2</div><span>Coordinate a pickup time with Amy via in-app chat</span></div>
+        <div class="how-step"><div class="how-num">3</div><span>Show your pickup code at the farm — payment releases to Amy</span></div>
+      </div>
+    </div>
+    <div class="detail-footer">
+      <div class="qty-ctrl">
+        <button class="qty-btn">−</button>
+        <span class="qty-num">1</span>
+        <button class="qty-btn">+</button>
+      </div>
+      <button class="btn btn-primary" style="flex:1" onclick="show('booking')">Book pickup · $22</button>
+    </div>
+  </div>
+
+  <!-- BOOKING -->
+  <div class="screen" id="booking">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="scroll">
+      <div class="booking-header">
+        <button class="back" onclick="show('detail')">←</button>
+        <h2>Book pickup</h2>
+      </div>
+      <div class="booking-section">
+        <p class="booking-label">Your order</p>
+        <div class="order-item">
+          <div class="order-icon">🧴</div>
+          <div class="order-info">
+            <h4>Healing Kukui Body Balm</h4>
+            <p>Amy's Kahuku Farm · qty 1</p>
+          </div>
+        </div>
+      </div>
+      <div class="booking-section">
+        <p class="booking-label">Choose a pickup day</p>
+        <div class="date-picker">
+          <div class="date-opt"><div class="date-day">TUE</div><div class="date-num">3</div><div class="date-time">9am–12pm</div></div>
+          <div class="date-opt selected"><div class="date-day">WED</div><div class="date-num">4</div><div class="date-time">10am–2pm</div></div>
+          <div class="date-opt"><div class="date-day">FRI</div><div class="date-num">6</div><div class="date-time">8am–11am</div></div>
+        </div>
+      </div>
+      <div class="booking-section">
+        <p class="booking-label">Payment summary</p>
+        <div class="price-row"><span>Healing Kukui Balm × 1</span><span>$22.00</span></div>
+        <div class="price-row"><span>Kama fee</span><span style="color:#3b6d11;">Free</span></div>
+        <div class="price-row total"><span>Total</span><span>$22.00</span></div>
+        <div class="escrow-note">🛡️ Your $22 is held safely in escrow until you pick up your order. Amy gets paid when you show your code.</div>
+      </div>
+    </div>
+    <div class="booking-footer">
+      <button class="btn btn-primary" onclick="show('confirmed')">Confirm & pay · $22</button>
+    </div>
+  </div>
+
+  <!-- CONFIRMED -->
+  <div class="screen" id="confirmed">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="scroll">
+      <div class="confirmed-body">
+        <div class="check-circle">✅</div>
+        <h2 class="confirmed-title">Order confirmed!</h2>
+        <p class="confirmed-sub">Show this code to Amy when you arrive. Your $22 is held safely until pickup.</p>
+        <div class="pickup-card">
+          <p class="pickup-label">Your pickup code</p>
+          <div class="pickup-code">K4M2</div>
+          <p class="pickup-desc">Wednesday, June 4 · 10am–2pm</p>
+        </div>
+        <div class="pickup-detail">
+          <div class="pickup-row"><span>📍</span><span>Amy's Kahuku Farm, 56-781 Kamehameha Hwy, Kahuku</span></div>
+          <div class="pickup-row"><span>🧴</span><span>Healing Kukui Body Balm × 1</span></div>
+          <div class="pickup-row"><span>💬</span><span>Message Amy if you need to reschedule</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="confirmed-footer">
+      <button class="btn btn-secondary" style="flex:1" onclick="show('chat')">Message Amy</button>
+      <button class="btn btn-primary" style="flex:1" onclick="show('discover')">Keep browsing</button>
+    </div>
+  </div>
+
+  <!-- MESSAGES LIST -->
+  <div class="screen" id="messages">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="scroll">
+      <div class="msg-header"><h2>Messages</h2></div>
+      <div class="msg-thread" onclick="show('chat')">
+        <div class="thread-avatar">A</div>
+        <div class="thread-info">
+          <div class="thread-name">Amy's Kahuku Farm</div>
+          <div class="thread-preview">Your order is ready for pickup 🌿</div>
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+          <div class="thread-time">10m</div>
+          <div class="unread-dot"></div>
+        </div>
+      </div>
+      <div class="msg-thread">
+        <div class="thread-avatar" style="background: linear-gradient(135deg, #8fbc8f, #5a8a5a);">P</div>
+        <div class="thread-info">
+          <div class="thread-name">Pono Bees</div>
+          <div class="thread-preview">Thanks for your order!</div>
+        </div>
+        <div class="thread-time">2d</div>
+      </div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab" onclick="show('discover')"><div class="tab-icon">🏠</div><div class="tab-label">Discover</div></button>
+      <button class="tab active"><div class="tab-icon">💬</div><div class="tab-label">Messages</div></button>
+      <button class="tab"><div class="tab-icon">🛒</div><div class="tab-label">Orders</div></button>
+      <button class="tab"><div class="tab-icon">👤</div><div class="tab-label">Profile</div></button>
+    </div>
+  </div>
+
+  <!-- CHAT -->
+  <div class="screen" id="chat">
+    <div class="status"><span class="time">9:41</span><div class="icons"><span>●●●</span><span>WiFi</span><span>🔋</span></div></div>
+    <div class="chat-header">
+      <button class="back" onclick="show('messages')">←</button>
+      <div class="chat-avatar">A</div>
+      <div>
+        <div class="chat-name">Amy's Kahuku Farm</div>
+        <div class="chat-status">Active now</div>
+      </div>
+    </div>
+    <div class="chat-messages">
+      <div>
+        <div class="bubble them">Hi! I saw your order came through — so excited to share these balms 🌿</div>
+        <div class="bubble-time">10:24am</div>
+      </div>
+      <div style="align-self:flex-end">
+        <div class="bubble me">Amazing! Can I pick up Wednesday around 11am?</div>
+        <div class="bubble-time right">10:26am</div>
+      </div>
+      <div>
+        <div class="bubble them">Wednesday at 11 works perfectly. I'll have your order packed and ready at the gate 🤙</div>
+        <div class="bubble-time">10:27am</div>
+      </div>
+      <div style="align-self:flex-end">
+        <div class="bubble me">Perfect, see you then! Your story is the reason I downloaded Kama 🌺</div>
+        <div class="bubble-time right">10:28am</div>
+      </div>
+      <div>
+        <div class="bubble them">That means everything. Your order is ready for pickup 🌿</div>
+        <div class="bubble-time">10:31am</div>
+      </div>
+    </div>
+    <div class="chat-input">
+      <input class="chat-field" placeholder="Message Amy..." />
+      <button class="send-btn">↑</button>
+    </div>
+  </div>
+
+</div>
+<script>
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    document.getElementById(id).querySelector('.scroll')?.scrollTo(0, 0);
+  }
+
+  document.querySelectorAll('.cat').forEach(c => {
+    c.addEventListener('click', function() {
+      document.querySelectorAll('.cat').forEach(x => x.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  document.querySelectorAll('.date-opt').forEach(d => {
+    d.addEventListener('click', function() {
+      document.querySelectorAll('.date-opt').forEach(x => x.classList.remove('selected'));
+      this.classList.add('selected');
+    });
+  });
+
+  let qty = 1;
+  document.querySelectorAll('.qty-btn').forEach((btn, i) => {
+    btn.addEventListener('click', () => {
+      if (i === 0 && qty > 1) qty--;
+      if (i === 1) qty++;
+      document.querySelector('.qty-num').textContent = qty;
+    });
+  });
+</script>
+</body>
+</html>
