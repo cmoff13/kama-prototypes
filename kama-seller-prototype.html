@@ -6,8 +6,9 @@
 <title>Kama — Seller App</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
-  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: #f0f0f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif; background: transparent; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
 
+  .phone-wrap { transform: scale(0.72); transform-origin: top center; width: 390px; height: 844px; margin: 0 auto; }
   .phone { width: 390px; height: 844px; background: #fff; border-radius: 44px; overflow: hidden; position: relative; box-shadow: 0 40px 80px rgba(0,0,0,0.25); }
   .screen { width: 100%; height: 100%; position: absolute; top: 0; left: 0; overflow: hidden; display: none; flex-direction: column; }
   .screen.active { display: flex; }
@@ -178,6 +179,7 @@
 </style>
 </head>
 <body>
+<div class="phone-wrap">
 <div class="phone">
 
   <!-- DASHBOARD -->
@@ -496,6 +498,7 @@
     </div>
   </div>
 
+</div>
 </div>
 <script>
   function show(id) {
